@@ -1,9 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
-using System.Runtime.Serialization;
-using System.Text;
 using System.Threading.Tasks;
 using TelegramBotBase.Args;
 using TelegramBotBase.Attributes;
@@ -64,12 +61,12 @@ namespace TelegramBotBase
 
             start.Client = this.Client;
 
-            DeviceSession ds = new Sessions.DeviceSession(deviceId, start);
-
+            var ds = new DeviceSession(deviceId, start, BotBase.ServiceFactory.CreateScope());
+            
             start.Device = ds;
             await start.OnInit(new InitEventArgs());
 
-            await start.OnOpened(new EventArgs());
+            await start.OnOpened(EventArgs.Empty);
 
             SessionList[deviceId] = ds;
             return ds;
@@ -82,7 +79,9 @@ namespace TelegramBotBase
         public void EndSession(long deviceId)
         {
             var d = SessionList[deviceId];
-            if (d != null) SessionList.Remove(deviceId);
+            if (d == null) return;
+            d.Dispose();
+            SessionList.Remove(deviceId);
         }
 
         /// <summary>

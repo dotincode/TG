@@ -2,19 +2,13 @@
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
-using System.Text;
-using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Extensions.DependencyInjection;
 using Telegram.Bot;
-using Telegram.Bot.Exceptions;
 using Telegram.Bot.Types;
-using Telegram.Bot.Types.Enums;
 using TelegramBotBase.Args;
-using TelegramBotBase.Attributes;
 using TelegramBotBase.Base;
 using TelegramBotBase.Enums;
-using TelegramBotBase.MessageLoops;
-using TelegramBotBase.Form;
 using TelegramBotBase.Interfaces;
 using TelegramBotBase.Sessions;
 
@@ -72,7 +66,10 @@ namespace TelegramBotBase
         /// Offers functionality to manage the creation process of the start form.
         /// </summary>
         public IStartFormFactory StartFormFactory { get; set; }
-
+        
+        public IServiceScopeFactory ServiceFactory { get; set; }
+        
+        
         /// <summary>
         /// Contains the message loop factory, which cares about "message-management."
         /// </summary>

@@ -1,6 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Text;
 using TelegramBotBase.Form;
 
 namespace TelegramBotBase.Factories
@@ -21,6 +19,11 @@ namespace TelegramBotBase.Factories
         public FormBase CreateForm()
         {
             return _startFormClass.GetConstructor(new Type[] { })?.Invoke(new object[] { }) as FormBase;
+        }
+
+        public TForm CreateForm<TForm>() where TForm : FormBase
+        {
+            throw new NotImplementedException();
         }
     }
 }

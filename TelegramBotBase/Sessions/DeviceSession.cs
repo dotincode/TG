@@ -1,11 +1,11 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Microsoft.Extensions.DependencyInjection;
 using Telegram.Bot;
 using Telegram.Bot.Exceptions;
 using Telegram.Bot.Types;
@@ -15,6 +15,7 @@ using Telegram.Bot.Types.ReplyMarkups;
 using TelegramBotBase.Args;
 using TelegramBotBase.Base;
 using TelegramBotBase.Exceptions;
+using TelegramBotBase.Factories;
 using TelegramBotBase.Form;
 using TelegramBotBase.Interfaces;
 using TelegramBotBase.Markdown;
@@ -24,7 +25,7 @@ namespace TelegramBotBase.Sessions
     /// <summary>
     /// Base class for a device/chat session
     /// </summary>
-    public class DeviceSession : IDeviceSession
+    public class DeviceSession : IDeviceSession, IDisposable
     {
         /// <summary>
         /// Device or chat id
@@ -57,6 +58,7 @@ namespace TelegramBotBase.Sessions
         /// Returns the form where the user/group is at the moment.
         /// </summary>
         public FormBase ActiveForm { get; set; }
+
 
         /// <summary>
         /// Returns the previous shown form
@@ -132,6 +134,19 @@ namespace TelegramBotBase.Sessions
 
         public DeviceSession(long DeviceId, FormBase StartForm)
         {
+            this.DeviceId = DeviceId;
+            this.ActiveForm = StartForm;
+            this.ActiveForm.Device = this;
+        }
+        
+        private readonly IServiceScope _serviceScope;
+
+        public IFormFactory FormFactory { get; }
+
+        public DeviceSession(long DeviceId, FormBase StartForm, IServiceScope scope)
+        {
+            _serviceScope = scope;
+            FormFactory = new ServiceProviderFormFactory(_serviceScope.ServiceProvider);
             this.DeviceId = DeviceId;
             this.ActiveForm = StartForm;
             this.ActiveForm.Device = this;
@@ -966,5 +981,10 @@ namespace TelegramBotBase.Sessions
         public static uint MaxNumberOfRetries { get; set; }
 
         #endregion "Static"
+
+        public void Dispose()
+        {
+            _serviceScope?.Dispose();
+        }
     }
 }

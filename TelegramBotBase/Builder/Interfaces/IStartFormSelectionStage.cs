@@ -1,6 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Text;
+using Microsoft.Extensions.DependencyInjection;
 using TelegramBotBase.Form;
 using TelegramBotBase.Interfaces;
 
@@ -31,6 +30,7 @@ namespace TelegramBotBase.Builder.Interfaces
         /// <returns></returns>
         INetworkingSelectionStage WithServiceProvider(Type startFormClass, IServiceProvider serviceProvider);
 
+        IStartFormSelectionStage WithServiceFactory(IServiceScopeFactory factory);
         /// <summary>
         /// Chooses a StartFormFactory which will be use for new sessions.
         /// </summary>
@@ -38,7 +38,7 @@ namespace TelegramBotBase.Builder.Interfaces
         /// <typeparam name="T"></typeparam>
         /// <returns></returns>
         INetworkingSelectionStage WithServiceProvider<T>(IServiceProvider serviceProvider) where T : FormBase;
-
+        
         /// <summary>
         /// Chooses a StartFormFactory which will be use for new sessions.
         /// </summary>

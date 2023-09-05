@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Net.Http;
-using System.Text;
+using Microsoft.Extensions.DependencyInjection;
 using Telegram.Bot;
 using Telegram.Bot.Types;
 using TelegramBotBase.Base;
@@ -21,6 +21,8 @@ namespace TelegramBotBase.Builder
         String _apiKey = null;
 
         IStartFormFactory _factory = null;
+
+        IServiceScopeFactory _serviceFactory = null;
 
         MessageClient _client = null;
 
@@ -177,6 +179,12 @@ namespace TelegramBotBase.Builder
             return this;
         }
 
+        public IStartFormSelectionStage WithServiceFactory(IServiceScopeFactory factory) 
+        {
+            _serviceFactory = factory;
+            return this;
+        }
+
         public INetworkingSelectionStage WithStartFormFactory(IStartFormFactory factory)
         {
             this._factory = factory;
@@ -328,18 +336,16 @@ namespace TelegramBotBase.Builder
 
         public BotBase Build()
         {
-            var bb = new BotBase();
-
-            bb.APIKey = _apiKey;
-            bb.StartFormFactory = _factory;
-
-            bb.Client = _client;
-
-            bb.BotCommandScopes = _BotCommandScopes;
-
-            bb.StateMachine = _statemachine;
-
-            bb.MessageLoopFactory = _messageloopfactory;
+            var bb = new BotBase
+            {
+                APIKey = _apiKey,
+                StartFormFactory = _factory,
+                ServiceFactory = _serviceFactory,
+                Client = _client,
+                BotCommandScopes = _BotCommandScopes,
+                StateMachine = _statemachine,
+                MessageLoopFactory = _messageloopfactory
+            };
 
             bb.MessageLoopFactory.UnhandledCall += bb.MessageLoopFactory_UnhandledCall;
 
