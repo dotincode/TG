@@ -1,127 +1,132 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
 using TelegramBotBase.Args;
 using TelegramBotBase.Base;
 
-namespace TelegramBotBase.Controls.Hybrid;
-
-/// <summary>
-///     This Control is for having a basic form content switching control.
-/// </summary>
-public abstract class MultiView : ControlBase
+namespace TelegramBotBase.Controls.Hybrid
 {
-    private int _mISelectedViewIndex;
 
     /// <summary>
-    ///     Hold if the View has been rendered already.
+    /// This Control is for having a basic form content switching control.
     /// </summary>
-    private bool _rendered;
-
-
-    public MultiView()
+    public abstract class MultiView : Base.ControlBase
     {
-        Messages = new List<int>();
-    }
-
-    /// <summary>
-    ///     Index of the current View.
-    /// </summary>
-    public int SelectedViewIndex
-    {
-        get => _mISelectedViewIndex;
-        set
+        /// <summary>
+        /// Index of the current View.
+        /// </summary>
+        public int SelectedViewIndex
         {
-            _mISelectedViewIndex = value;
-
-            //Already rendered? Re-Render
-            if (_rendered)
+            get
             {
-                ForceRender().Wait();
+                return m_iSelectedViewIndex;
+            }
+            set
+            {
+                m_iSelectedViewIndex = value;
+
+                //Already rendered? Re-Render
+                if (_Rendered)
+                    ForceRender().Wait();
             }
         }
-    }
 
-    private List<int> Messages { get; }
+        private int m_iSelectedViewIndex = 0;
+
+        /// <summary>
+        /// Hold if the View has been rendered already.
+        /// </summary>
+        private bool _Rendered = false;
+
+        private List<int> Messages { get; set; }
 
 
-    private Task Device_MessageSent(object sender, MessageSentEventArgs e)
-    {
-        if (e.Origin == null || !e.Origin.IsSubclassOf(typeof(MultiView)))
+        public MultiView()
         {
-            return Task.CompletedTask;
+            Messages = new List<int>();
         }
 
-        Messages.Add(e.MessageId);
-        return Task.CompletedTask;
-    }
 
-    public override void Init()
-    {
-        Device.MessageSent += Device_MessageSent;
-    }
-
-    public override Task Load(MessageResult result)
-    {
-        _rendered = false;
-        return Task.CompletedTask;
-    }
-
-
-    public override async Task Render(MessageResult result)
-    {
-        //When already rendered, skip rendering
-        if (_rendered)
+        private async Task Device_MessageSent(object sender, MessageSentEventArgs e)
         {
-            return;
+            if (e.Origin == null || !e.Origin.IsSubclassOf(typeof(MultiView)))
+                return;
+
+            this.Messages.Add(e.MessageId);
         }
 
-        await CleanUpView();
-
-        await RenderView(new RenderViewEventArgs(SelectedViewIndex));
-
-        _rendered = true;
-    }
-
-
-    /// <summary>
-    ///     Will get invoked on rendering the current controls view.
-    /// </summary>
-    /// <param name="e"></param>
-    public virtual Task RenderView(RenderViewEventArgs e)
-    {
-        return Task.CompletedTask;
-    }
-
-    private async Task CleanUpView()
-    {
-        var tasks = new List<Task>();
-
-        foreach (var msg in Messages)
+        public override void Init()
         {
-            tasks.Add(Device.DeleteMessage(msg));
+            Device.MessageSent += Device_MessageSent;
         }
 
-        await Task.WhenAll(tasks);
+        public override async Task Load(MessageResult result)
+        {
+            _Rendered = false;
+        }
 
-        Messages.Clear();
-    }
 
-    /// <summary>
-    ///     Forces render of control contents.
-    /// </summary>
-    public async Task ForceRender()
-    {
-        await CleanUpView();
+        public override async Task Render(MessageResult result)
+        {
+            //When already rendered, skip rendering
+            if (_Rendered)
+                return;
 
-        await RenderView(new RenderViewEventArgs(SelectedViewIndex));
+            await CleanUpView();
 
-        _rendered = true;
-    }
+            await RenderView(new RenderViewEventArgs(this.SelectedViewIndex));
 
-    public override async Task Cleanup()
-    {
-        Device.MessageSent -= Device_MessageSent;
+            _Rendered = true;
+        }
 
-        await CleanUpView();
+
+        /// <summary>
+        /// Will get invoked on rendering the current controls view.
+        /// </summary>
+        /// <param name="e"></param>
+        public virtual async Task RenderView(RenderViewEventArgs e)
+        {
+
+
+        }
+
+        async Task CleanUpView()
+        {
+
+            var tasks = new List<Task>();
+
+            foreach (var msg in this.Messages)
+            {
+                tasks.Add(this.Device.DeleteMessage(msg));
+            }
+
+            await Task.WhenAll(tasks);
+
+            this.Messages.Clear();
+
+        }
+
+        /// <summary>
+        /// Forces render of control contents.
+        /// </summary>
+        public async Task ForceRender()
+        {
+            await CleanUpView();
+
+            await RenderView(new RenderViewEventArgs(this.SelectedViewIndex));
+
+            _Rendered = true;
+        }
+
+        public override async Task Cleanup()
+        {
+            Device.MessageSent -= Device_MessageSent;
+
+            await CleanUpView();
+        }
+
     }
 }

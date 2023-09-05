@@ -1,152 +1,164 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
 using TelegramBotBase.Base;
 using TelegramBotBase.Form;
-using TelegramBotBase.Localizations;
 
-namespace TelegramBotBase.Controls.Inline;
-
-public class MultiToggleButton : ControlBase
+namespace TelegramBotBase.Controls.Inline
 {
-    private static readonly object EvToggled = new();
-
-    private readonly EventHandlerList _events = new();
-
-    private bool _renderNecessary = true;
-
-
-    public MultiToggleButton()
+    public class MultiToggleButton : ControlBase
     {
-        Options = new List<ButtonBase>();
-    }
+        /// <summary>
+        /// This contains the selected icon.
+        /// </summary>
+        public String SelectedIcon { get; set; } = Localizations.Default.Language["MultiToggleButton_SelectedIcon"];
 
-    /// <summary>
-    ///     This contains the selected icon.
-    /// </summary>
-    public string SelectedIcon { get; set; } = Default.Language["MultiToggleButton_SelectedIcon"];
+        /// <summary>
+        /// This will appear on the ConfirmAction message (if not empty)
+        /// </summary>
+        public String ChangedString { get; set; } = Localizations.Default.Language["MultiToggleButton_Changed"];
 
-    /// <summary>
-    ///     This will appear on the ConfirmAction message (if not empty)
-    /// </summary>
-    public string ChangedString { get; set; } = Default.Language["MultiToggleButton_Changed"];
+        /// <summary>
+        /// This holds the title of the control.
+        /// </summary>
+        public String Title { get; set; } = Localizations.Default.Language["MultiToggleButton_Title"];
 
-    /// <summary>
-    ///     This holds the title of the control.
-    /// </summary>
-    public string Title { get; set; } = Default.Language["MultiToggleButton_Title"];
+        public int? MessageId { get; set; }
 
-    public int? MessageId { get; set; }
+        private bool RenderNecessary = true;
 
-    /// <summary>
-    ///     This will hold all options available.
-    /// </summary>
-    public List<ButtonBase> Options { get; set; }
+        private static readonly object __evToggled = new object();
 
-    /// <summary>
-    ///     This will set if an empty selection (null) is allowed.
-    /// </summary>
-    public bool AllowEmptySelection { get; set; } = true;
+        private readonly EventHandlerList Events = new EventHandlerList();
 
-    public ButtonBase SelectedOption { get; set; }
+        /// <summary>
+        /// This will hold all options available.
+        /// </summary>
+        public List<ButtonBase> Options { get; set; }
 
-    public event EventHandler Toggled
-    {
-        add => _events.AddHandler(EvToggled, value);
-        remove => _events.RemoveHandler(EvToggled, value);
-    }
+        /// <summary>
+        /// This will set if an empty selection (null) is allowed.
+        /// </summary>
+        public bool AllowEmptySelection { get; set; } = true;
 
-    public void OnToggled(EventArgs e)
-    {
-        (_events[EvToggled] as EventHandler)?.Invoke(this, e);
-    }
 
-    public override async Task Action(MessageResult result, string value = null)
-    {
-        if (result.Handled)
+        public MultiToggleButton()
         {
-            return;
+            Options = new List<ButtonBase>();
         }
 
-        await result.ConfirmAction(ChangedString);
-
-        switch (value ?? "unknown")
+        public event EventHandler Toggled
         {
-            default:
+            add
+            {
+                this.Events.AddHandler(__evToggled, value);
+            }
+            remove
+            {
+                this.Events.RemoveHandler(__evToggled, value);
+            }
+        }
 
-                var s = value.Split('$');
+        public void OnToggled(EventArgs e)
+        {
+            (this.Events[__evToggled] as EventHandler)?.Invoke(this, e);
+        }
 
-                if (s[0] == "check" && s.Length > 1)
-                {
-                    var index = 0;
-                    if (!int.TryParse(s[1], out index))
+        public override async Task Action(MessageResult result, String value = null)
+        {
+            if (result.Handled)
+                return;
+
+            await result.ConfirmAction(this.ChangedString);
+
+            switch (value ?? "unknown")
+            {
+                default:
+
+                    var s = value.Split('$');
+
+                    if (s[0] == "check" && s.Length > 1)
                     {
+                        int index = 0;
+                        if (!int.TryParse(s[1], out index))
+                        {
+                            return;
+                        }
+
+                        if(SelectedOption== null || SelectedOption != this.Options[index])
+                        {
+                            this.SelectedOption = this.Options[index];
+                            OnToggled(new EventArgs());
+                        }
+                        else if(this.AllowEmptySelection)
+                        {
+                            this.SelectedOption = null;
+                            OnToggled(new EventArgs());
+                        }
+
+                        RenderNecessary = true;
+
                         return;
                     }
 
-                    if (SelectedOption == null || SelectedOption != Options[index])
-                    {
-                        SelectedOption = Options[index];
-                        OnToggled(EventArgs.Empty);
-                    }
-                    else if (AllowEmptySelection)
-                    {
-                        SelectedOption = null;
-                        OnToggled(EventArgs.Empty);
-                    }
 
-                    _renderNecessary = true;
+                    RenderNecessary = false;
 
-                    return;
+                    break;
+
+            }
+
+            result.Handled = true;
+
+        }
+
+        public override async Task Render(MessageResult result)
+        {
+            if (!RenderNecessary)
+                return;
+
+            var bf = new ButtonForm(this);
+
+            var lst = new List<ButtonBase>();
+            foreach (var o in this.Options)
+            {
+                var index = this.Options.IndexOf(o);
+                if (o == this.SelectedOption)
+                {
+                    lst.Add(new ButtonBase(SelectedIcon + " " + o.Text, "check$" + index));
+                    continue;
                 }
 
-
-                _renderNecessary = false;
-
-                break;
-        }
-
-        result.Handled = true;
-    }
-
-    public override async Task Render(MessageResult result)
-    {
-        if (!_renderNecessary)
-        {
-            return;
-        }
-
-        var bf = new ButtonForm(this);
-
-        var lst = new List<ButtonBase>();
-        foreach (var o in Options)
-        {
-            var index = Options.IndexOf(o);
-            if (o == SelectedOption)
-            {
-                lst.Add(new ButtonBase(SelectedIcon + " " + o.Text, "check$" + index));
-                continue;
+                lst.Add(new ButtonBase(o.Text, "check$" + index));
             }
 
-            lst.Add(new ButtonBase(o.Text, "check$" + index));
-        }
+            bf.AddButtonRow(lst);
 
-        bf.AddButtonRow(lst);
-
-        if (MessageId != null)
-        {
-            var m = await Device.Edit(MessageId.Value, Title, bf);
-        }
-        else
-        {
-            var m = await Device.Send(Title, bf, disableNotification: true);
-            if (m != null)
+            if (this.MessageId != null)
             {
-                MessageId = m.MessageId;
+                var m = await this.Device.Edit(this.MessageId.Value, this.Title, bf);
             }
+            else
+            {
+                var m = await this.Device.Send(this.Title, bf, disableNotification: true);
+                if (m != null)
+                {
+                    this.MessageId = m.MessageId;
+                }
+            }
+
+            this.RenderNecessary = false;
+
+
         }
 
-        _renderNecessary = false;
+        public ButtonBase SelectedOption
+        {
+            get; set;
+        }
+
     }
 }

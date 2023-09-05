@@ -1,119 +1,124 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
 using TelegramBotBase.Args;
 using TelegramBotBase.Attributes;
 using TelegramBotBase.Base;
 
-namespace TelegramBotBase.Form;
-
-[IgnoreState]
-public class ConfirmDialog : ModalDialog
+namespace TelegramBotBase.Form
 {
-    public ConfirmDialog()
+    [IgnoreState]
+    public class ConfirmDialog : ModalDialog
     {
-    }
+        /// <summary>
+        /// The message the users sees.
+        /// </summary>
+        public String Message { get; set; }
 
-    public ConfirmDialog(string message)
-    {
-        Message = message;
-        Buttons = new List<ButtonBase>();
-    }
+        /// <summary>
+        /// An additional optional value.
+        /// </summary>
+        public object Tag { get; set; }
 
-    public ConfirmDialog(string message, params ButtonBase[] buttons)
-    {
-        Message = message;
-        Buttons = buttons.ToList();
-    }
+        /// <summary>
+        /// Automatically close form on button click
+        /// </summary>
+        public bool AutoCloseOnClick { get; set; } = true;
 
-    /// <summary>
-    ///     The message the users sees.
-    /// </summary>
-    public string Message { get; set; }
+        public List<ButtonBase> Buttons { get; set; }
 
-    /// <summary>
-    ///     An additional optional value.
-    /// </summary>
-    public object Tag { get; set; }
+        private EventHandlerList __Events { get; set; } = new EventHandlerList();
 
-    /// <summary>
-    ///     Automatically close form on button click
-    /// </summary>
-    public bool AutoCloseOnClick { get; set; } = true;
+        private static object __evButtonClicked { get; } = new object();
 
-    public List<ButtonBase> Buttons { get; set; }
-
-    private static object EvButtonClicked { get; } = new();
-
-    /// <summary>
-    ///     Adds one Button
-    /// </summary>
-    /// <param name="button"></param>
-    public void AddButton(ButtonBase button)
-    {
-        Buttons.Add(button);
-    }
-
-    public override async Task Action(MessageResult message)
-    {
-        if (message.Handled)
+        public ConfirmDialog()
         {
-            return;
+
         }
 
-        if (!message.IsFirstHandler)
+        public ConfirmDialog(String Message)
         {
-            return;
+            this.Message = Message;
+            this.Buttons = new List<Form.ButtonBase>();
         }
 
-        var call = message.GetData<CallbackData>();
-        if (call == null)
+        public ConfirmDialog(String Message, params ButtonBase[] Buttons)
         {
-            return;
+            this.Message = Message;
+            this.Buttons = Buttons.ToList();
         }
 
-        message.Handled = true;
-
-        await message.ConfirmAction();
-
-        await message.DeleteMessage();
-
-        var button = Buttons.FirstOrDefault(a => a.Value == call.Value);
-
-        if (button == null)
+        /// <summary>
+        /// Adds one Button
+        /// </summary>
+        /// <param name="button"></param>
+        public void AddButton(ButtonBase button)
         {
-            return;
+            this.Buttons.Add(button);
         }
 
-        OnButtonClicked(new ButtonClickedEventArgs(button) { Tag = Tag });
-
-        if (AutoCloseOnClick)
+        public override async Task Action(MessageResult message)
         {
-            await CloseForm();
+            if (message.Handled)
+                return;
+
+            if (!message.IsFirstHandler)
+                return;
+
+            var call = message.GetData<CallbackData>();
+            if (call == null)
+                return;
+
+            message.Handled = true;
+
+            await message.ConfirmAction();
+
+            await message.DeleteMessage();
+
+            ButtonBase button = this.Buttons.FirstOrDefault(a => a.Value == call.Value);
+
+            if (button == null)
+            {
+                return;
+            }
+
+            OnButtonClicked(new ButtonClickedEventArgs(button) { Tag = this.Tag });
+
+            if (AutoCloseOnClick)
+                await CloseForm();
         }
-    }
 
 
-    public override async Task Render(MessageResult message)
-    {
-        var btn = new ButtonForm();
+        public override async Task Render(MessageResult message)
+        {
+            ButtonForm btn = new ButtonForm();
 
-        var buttons = Buttons.Select(a => new ButtonBase(a.Text, CallbackData.Create("action", a.Value))).ToList();
-        btn.AddButtonRow(buttons);
+            var buttons = this.Buttons.Select(a => new ButtonBase(a.Text, CallbackData.Create("action", a.Value))).ToList();
+            btn.AddButtonRow(buttons);
 
-        await Device.Send(Message, btn);
-    }
+            await this.Device.Send(this.Message, btn);
+        }
 
 
-    public event EventHandler<ButtonClickedEventArgs> ButtonClicked
-    {
-        add => Events.AddHandler(EvButtonClicked, value);
-        remove => Events.RemoveHandler(EvButtonClicked, value);
-    }
+        public event EventHandler<ButtonClickedEventArgs> ButtonClicked
+        {
+            add
+            {
+                this.__Events.AddHandler(__evButtonClicked, value);
+            }
+            remove
+            {
+                this.__Events.RemoveHandler(__evButtonClicked, value);
+            }
+        }
 
-    public void OnButtonClicked(ButtonClickedEventArgs e)
-    {
-        (Events[EvButtonClicked] as EventHandler<ButtonClickedEventArgs>)?.Invoke(this, e);
+        public void OnButtonClicked(ButtonClickedEventArgs e)
+        {
+            (this.__Events[__evButtonClicked] as EventHandler<ButtonClickedEventArgs>)?.Invoke(this, e);
+        }
+
     }
 }

@@ -1,122 +1,137 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.ComponentModel;
+using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
-using Telegram.Bot.Types.Enums;
+using Telegram.Bot.Types;
 using TelegramBotBase.Args;
 using TelegramBotBase.Base;
+using TelegramBotBase.Enums;
 using TelegramBotBase.Interfaces;
 using TelegramBotBase.Sessions;
 
-namespace TelegramBotBase.MessageLoops;
-
-/// <summary>
-///     Thats the default message loop which reacts to Message, EditMessage and CallbackQuery.
-/// </summary>
-public class FormBaseMessageLoop : IMessageLoopFactory
+namespace TelegramBotBase.MessageLoops
 {
-    private static readonly object EvUnhandledCall = new();
-
-    private readonly EventHandlerList _events = new();
-
-    public async Task MessageLoop(BotBase bot, DeviceSession session, UpdateResult ur, MessageResult mr)
+    /// <summary>
+    /// Thats the default message loop which reacts to Message, EditMessage and CallbackQuery.
+    /// </summary>
+    public class FormBaseMessageLoop : IMessageLoopFactory
     {
-        var update = ur.RawData;
+        private static object __evUnhandledCall = new object();
 
+        private EventHandlerList __Events = new EventHandlerList();
 
-        if (update.Type != UpdateType.Message
-            && update.Type != UpdateType.EditedMessage
-            && update.Type != UpdateType.CallbackQuery)
+        public FormBaseMessageLoop()
         {
-            return;
+
         }
 
-        //Is this a bot command ?
-        if (mr.IsFirstHandler && mr.IsBotCommand && bot.IsKnownBotCommand(mr.BotCommand))
+        public async Task MessageLoop(BotBase Bot, DeviceSession session, UpdateResult ur, MessageResult mr)
         {
-            var sce = new BotCommandEventArgs(mr.BotCommand, mr.BotCommandParameters, mr.Message, session.DeviceId,
-                                              session);
-            await bot.OnBotCommand(sce);
+            var update = ur.RawData;
 
-            if (sce.Handled)
+
+            if (update.Type != Telegram.Bot.Types.Enums.UpdateType.Message
+             && update.Type != Telegram.Bot.Types.Enums.UpdateType.EditedMessage
+             && update.Type != Telegram.Bot.Types.Enums.UpdateType.CallbackQuery)
             {
                 return;
             }
-        }
 
-        mr.Device = session;
-
-        var activeForm = session.ActiveForm;
-
-        //Pre Loading Event
-        await activeForm.PreLoad(mr);
-
-        //Send Load event to controls
-        await activeForm.LoadControls(mr);
-
-        //Loading Event
-        await activeForm.Load(mr);
-
-
-        //Is Attachment ? (Photo, Audio, Video, Contact, Location, Document) (Ignore Callback Queries)
-        if (update.Type == UpdateType.Message)
-        {
-            if ((mr.MessageType == MessageType.Contact)
-                | (mr.MessageType == MessageType.Document)
-                | (mr.MessageType == MessageType.Location)
-                | (mr.MessageType == MessageType.Photo)
-                | (mr.MessageType == MessageType.Video)
-                | (mr.MessageType == MessageType.Audio))
+            //Is this a bot command ?
+            if (mr.IsFirstHandler && mr.IsBotCommand && Bot.IsKnownBotCommand(mr.BotCommand))
             {
-                await activeForm.SentData(new DataResult(ur));
+                var sce = new BotCommandEventArgs(mr.BotCommand, mr.BotCommandParameters, mr.Message, session.DeviceId, session);
+                await Bot.OnBotCommand(sce);
+
+                if (sce.Handled)
+                    return;
             }
-        }
 
-        //Action Event
-        if (!session.FormSwitched && mr.IsAction)
-        {
-            //Send Action event to controls
-            await activeForm.ActionControls(mr);
+            mr.Device = session;
 
-            //Send Action event to form itself
-            await activeForm.Action(mr);
+            var activeForm = session.ActiveForm;
 
-            if (!mr.Handled)
+            //Pre Loading Event
+            await activeForm.PreLoad(mr);
+
+            //Send Load event to controls
+            await activeForm.LoadControls(mr);
+
+            //Loading Event
+            await activeForm.Load(mr);
+
+
+            //Is Attachment ? (Photo, Audio, Video, Contact, Location, Document) (Ignore Callback Queries)
+            if (update.Type == Telegram.Bot.Types.Enums.UpdateType.Message)
             {
-                var uhc = new UnhandledCallEventArgs(ur.Message.Text, mr.RawData, session.DeviceId, mr.MessageId,
-                                                     ur.Message, session);
-                OnUnhandledCall(uhc);
-
-                if (uhc.Handled)
+                if (mr.MessageType == Telegram.Bot.Types.Enums.MessageType.Contact
+                    | mr.MessageType == Telegram.Bot.Types.Enums.MessageType.Document
+                    | mr.MessageType == Telegram.Bot.Types.Enums.MessageType.Location
+                    | mr.MessageType == Telegram.Bot.Types.Enums.MessageType.Photo
+                    | mr.MessageType == Telegram.Bot.Types.Enums.MessageType.Video
+                    | mr.MessageType == Telegram.Bot.Types.Enums.MessageType.Audio)
                 {
-                    mr.Handled = true;
-                    if (!session.FormSwitched)
-                    {
-                        return;
-                    }
+                    await activeForm.SentData(new DataResult(ur));
                 }
             }
+
+            //Action Event
+            if (!session.FormSwitched && mr.IsAction)
+            {
+                //Send Action event to controls
+                await activeForm.ActionControls(mr);
+
+                //Send Action event to form itself
+                await activeForm.Action(mr);
+
+                if (!mr.Handled)
+                {
+                    var uhc = new UnhandledCallEventArgs(ur.Message.Text, mr.RawData, session.DeviceId, mr.MessageId, ur.Message, session);
+                    OnUnhandledCall(uhc);
+
+                    if (uhc.Handled)
+                    {
+                        mr.Handled = true;
+                        if (!session.FormSwitched)
+                        {
+                            return;
+                        }
+                    }
+                }
+
+            }
+
+            if (!session.FormSwitched)
+            {
+                //Render Event
+                await activeForm.RenderControls(mr);
+
+                await activeForm.Render(mr);
+            }
+
         }
 
-        if (!session.FormSwitched)
+        /// <summary>
+        /// Will be called if no form handeled this call
+        /// </summary>
+        public event EventHandler<UnhandledCallEventArgs> UnhandledCall
         {
-            //Render Event
-            await activeForm.RenderControls(mr);
-
-            await activeForm.Render(mr);
+            add
+            {
+                this.__Events.AddHandler(__evUnhandledCall, value);
+            }
+            remove
+            {
+                this.__Events.RemoveHandler(__evUnhandledCall, value);
+            }
         }
-    }
 
-    /// <summary>
-    ///     Will be called if no form handled this call
-    /// </summary>
-    public event EventHandler<UnhandledCallEventArgs> UnhandledCall
-    {
-        add => _events.AddHandler(EvUnhandledCall, value);
-        remove => _events.RemoveHandler(EvUnhandledCall, value);
-    }
+        public void OnUnhandledCall(UnhandledCallEventArgs e)
+        {
+            (this.__Events[__evUnhandledCall] as EventHandler<UnhandledCallEventArgs>)?.Invoke(this, e);
 
-    public void OnUnhandledCall(UnhandledCallEventArgs e)
-    {
-        (_events[EvUnhandledCall] as EventHandler<UnhandledCallEventArgs>)?.Invoke(this, e);
+        }
     }
 }

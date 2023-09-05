@@ -1,8 +1,14 @@
-﻿namespace TelegramBotBase.Args;
+﻿using System;
+using System.Collections.Generic;
+using System.Text;
 
-public class PromptDialogCompletedEventArgs
+namespace TelegramBotBase.Args
 {
-    public object Tag { get; set; }
+    public class PromptDialogCompletedEventArgs
+    {
+        public object Tag { get; set; }
 
-    public string Value { get; set; }
+        public String Value { get; set; }
+
+    }
 }

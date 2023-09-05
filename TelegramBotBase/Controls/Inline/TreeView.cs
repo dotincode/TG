@@ -1,121 +1,122 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
 using TelegramBotBase.Base;
 using TelegramBotBase.Form;
-using TelegramBotBase.Localizations;
 
-namespace TelegramBotBase.Controls.Inline;
-
-public class TreeView : ControlBase
+namespace TelegramBotBase.Controls.Inline
 {
-    public TreeView()
+    public class TreeView : ControlBase
     {
-        Nodes = new List<TreeViewNode>();
-        Title = Default.Language["TreeView_Title"];
-    }
+        public List<TreeViewNode> Nodes { get; set; }
 
-    public List<TreeViewNode> Nodes { get; set; }
+        public TreeViewNode SelectedNode { get; set; }
 
-    public TreeViewNode SelectedNode { get; set; }
+        public TreeViewNode VisibleNode { get; set; }
 
-    public TreeViewNode VisibleNode { get; set; }
+        public String Title { get; set; }
 
-    public string Title { get; set; }
+        private int? MessageId { get; set; }
 
-    public int? MessageId { get; set; }
+        public String MoveUpIcon { get; set; } = Localizations.Default.Language["TreeView_LevelUp"];
 
-    public string MoveUpIcon { get; set; } = Default.Language["TreeView_LevelUp"];
-
-
-    public override async Task Action(MessageResult result, string value = null)
-    {
-        await result.ConfirmAction();
-
-        if (result.Handled)
+        public TreeView()
         {
-            return;
+            this.Nodes = new List<TreeViewNode>();
+            this.Title = Localizations.Default.Language["TreeView_Title"];
         }
 
-        var val = result.RawData;
 
-        switch (val)
+        public override async Task Action(MessageResult result, String value = null)
         {
-            case "up":
-            case "parent":
+            await result.ConfirmAction();
 
-                VisibleNode = VisibleNode?.ParentNode;
+            if (result.Handled)
+                return;
 
-                result.Handled = true;
+            var val = result.RawData;
 
-                break;
-            default:
-
-                var n = VisibleNode != null
-                            ? VisibleNode.FindNodeByValue(val)
-                            : Nodes.FirstOrDefault(a => a.Value == val);
-
-                if (n == null)
-                {
-                    return;
-                }
-
-
-                if (n.ChildNodes.Count > 0)
-                {
-                    VisibleNode = n;
-                }
-                else
-                {
-                    SelectedNode = SelectedNode != n ? n : null;
-                }
-
-                result.Handled = true;
-
-
-                break;
-        }
-    }
-
-
-    public override async Task Render(MessageResult result)
-    {
-        var startnode = VisibleNode;
-
-        var nodes = startnode?.ChildNodes ?? Nodes;
-
-        var bf = new ButtonForm();
-
-        if (startnode != null)
-        {
-            bf.AddButtonRow(new ButtonBase(MoveUpIcon, "up"), new ButtonBase(startnode.Text, "parent"));
-        }
-
-        foreach (var n in nodes)
-        {
-            var s = n.Text;
-            if (SelectedNode == n)
+            switch (val)
             {
-                s = "[ " + s + " ]";
+                case "up":
+                case "parent":
+
+                    this.VisibleNode = (this.VisibleNode?.ParentNode);
+
+                    result.Handled = true;
+
+                    break;
+                default:
+
+                    var n = (this.VisibleNode != null ? this.VisibleNode.FindNodeByValue(val) : this.Nodes.FirstOrDefault(a => a.Value == val));
+
+                    if (n == null)
+                        return;
+
+
+                    if (n.ChildNodes.Count > 0)
+                    {
+                        this.VisibleNode = n;
+                    }
+                    else
+                    {
+                        this.SelectedNode = (this.SelectedNode != n ? n : null);
+                    }
+
+                    result.Handled = true;
+
+
+                    break;
+
             }
 
-            bf.AddButtonRow(new ButtonBase(s, n.Value, n.Url));
         }
 
 
-        if (MessageId != null)
+        public override async Task Render(MessageResult result)
         {
-            var m = await Device.Edit(MessageId.Value, Title, bf);
-        }
-        else
-        {
-            var m = await Device.Send(Title, bf);
-            MessageId = m.MessageId;
-        }
-    }
+            var startnode = this.VisibleNode;
 
-    public string GetPath()
-    {
-        return VisibleNode?.GetPath() ?? "\\";
+            var nodes = (startnode?.ChildNodes ?? this.Nodes);
+
+            ButtonForm bf = new ButtonForm();
+
+            if (startnode != null)
+            {
+                bf.AddButtonRow(new ButtonBase(this.MoveUpIcon, "up"), new ButtonBase(startnode.Text, "parent"));
+            }
+
+            foreach (var n in nodes)
+            {
+                var s = n.Text;
+                if (this.SelectedNode == n)
+                {
+                    s = "[ " + s + " ]";
+                }
+
+                bf.AddButtonRow(new ButtonBase(s, n.Value, n.Url));
+            }
+
+
+
+            if (this.MessageId != null)
+            {
+                var m = await this.Device.Edit(this.MessageId.Value, this.Title, bf);
+            }
+            else
+            {
+                var m = await this.Device.Send(this.Title, bf);
+                this.MessageId = m.MessageId;
+            }
+        }
+
+        public String GetPath()
+        {
+            return (this.VisibleNode?.GetPath() ?? "\\");
+        }
+
+
     }
 }

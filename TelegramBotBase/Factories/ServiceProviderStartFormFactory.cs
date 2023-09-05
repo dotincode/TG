@@ -3,34 +3,33 @@ using Microsoft.Extensions.DependencyInjection;
 using TelegramBotBase.Form;
 using TelegramBotBase.Interfaces;
 
-namespace TelegramBotBase.Factories;
-
-public class ServiceProviderStartFormFactory : IStartFormFactory
+namespace TelegramBotBase.Factories
 {
-    private readonly IServiceProvider _serviceProvider;
-    private readonly Type _startFormClass;
-
-    public ServiceProviderStartFormFactory(Type startFormClass, IServiceProvider serviceProvider)
+    public class ServiceProviderStartFormFactory : IStartFormFactory
     {
-        if (!typeof(FormBase).IsAssignableFrom(startFormClass))
+        private readonly Type _startFormClass;
+        private readonly IServiceProvider _serviceProvider;
+
+        public ServiceProviderStartFormFactory(Type startFormClass, IServiceProvider serviceProvider)
         {
-            throw new ArgumentException("startFormClass argument must be a FormBase type");
+            if (!typeof(FormBase).IsAssignableFrom(startFormClass))
+                throw new ArgumentException("startFormClass argument must be a FormBase type");
+
+            _startFormClass = startFormClass;
+            _serviceProvider = serviceProvider;
         }
 
-        _startFormClass = startFormClass;
-        _serviceProvider = serviceProvider;
+        public FormBase CreateForm()
+        {
+            return (FormBase)ActivatorUtilities.CreateInstance(_serviceProvider, _startFormClass);
+        }
     }
 
-    public FormBase CreateForm()
+    public class ServiceProviderStartFormFactory<T> : ServiceProviderStartFormFactory
+        where T : FormBase
     {
-        return (FormBase)ActivatorUtilities.CreateInstance(_serviceProvider, _startFormClass);
-    }
-}
-
-public class ServiceProviderStartFormFactory<T> : ServiceProviderStartFormFactory
-    where T : FormBase
-{
-    public ServiceProviderStartFormFactory(IServiceProvider serviceProvider) : base(typeof(T), serviceProvider)
-    {
+        public ServiceProviderStartFormFactory(IServiceProvider serviceProvider) : base(typeof(T), serviceProvider)
+        {
+        }
     }
 }

@@ -1,12 +1,26 @@
-﻿using TelegramBotBase.Enums;
+﻿using System;
+using System.Collections.Generic;
+using System.Globalization;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using TelegramBotBase.Base;
+using TelegramBotBase.Enums;
+using TelegramBotBase.Form;
 
-namespace TelegramBotBase.Controls.Inline;
-
-public class MonthPicker : CalendarPicker
+namespace TelegramBotBase.Controls.Inline
 {
-    public MonthPicker()
+    public class MonthPicker : CalendarPicker
     {
-        PickerMode = EMonthPickerMode.month;
-        EnableDayView = false;
+
+    
+
+        public MonthPicker()
+        {
+            this.PickerMode = eMonthPickerMode.month;
+            this.EnableDayView = false;
+        }
+
+
     }
 }

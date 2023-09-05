@@ -1,10 +1,27 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
+using System.Text;
 
-namespace TelegramBotBase.Localizations;
-
-public abstract class Localization
+namespace TelegramBotBase.Localizations
 {
-    public Dictionary<string, string> Values = new();
+    public abstract class Localization
+    {
+        public Dictionary<String, String> Values = new Dictionary<string, string>();
 
-    public string this[string key] => Values[key];
+        public String this[String key]
+        {
+            get
+            {
+                return Values[key];
+            }
+        }
+
+        public Localization()
+        {
+            
+            
+        }
+
+    }
 }
+

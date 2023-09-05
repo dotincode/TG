@@ -1,13 +1,20 @@
-﻿using TelegramBotBase.Base;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using TelegramBotBase.Base;
+using TelegramBotBase.Sessions;
 
-namespace TelegramBotBase.Args;
-
-public class SaveStatesEventArgs
+namespace TelegramBotBase.Args
 {
-    public SaveStatesEventArgs(StateContainer states)
+    public class SaveStatesEventArgs
     {
-        States = states;
-    }
+        public StateContainer States { get; set; }
 
-    public StateContainer States { get; set; }
+
+        public SaveStatesEventArgs(StateContainer states)
+        {
+            this.States = states;
+        }
+    }
 }

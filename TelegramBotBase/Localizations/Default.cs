@@ -1,6 +1,14 @@
-﻿namespace TelegramBotBase.Localizations;
+﻿using System;
+using System.Collections.Generic;
+using System.Text;
 
-public static class Default
+namespace TelegramBotBase.Localizations
 {
-    public static Localization Language = new English();
+    public static class Default
+    {
+
+        public static Localization Language = new English();
+
+
+    }
 }

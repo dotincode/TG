@@ -1,14 +1,22 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Text;
 
-namespace TelegramBotBase.Exceptions;
-
-public sealed class MaximumRowsReachedException : Exception
+namespace TelegramBotBase.Exceptions
 {
-    public int Value { get; set; }
+    public class MaximumRowsReachedException : Exception
+    {
+        public int Value { get; set; }
 
-    public int Maximum { get; set; }
+        public int Maximum { get; set; }
 
 
-    public override string Message =>
-        $"You have exceeded the maximum of rows by {Value}/{Maximum}";
+        public override string Message
+        {
+            get
+            {
+                return $"You have exceeded the maximum of rows by {Value.ToString()} / {Maximum.ToString()}";
+            }
+        }
+    }
 }

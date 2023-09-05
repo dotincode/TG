@@ -1,59 +1,63 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 
-namespace TelegramBotBase.Args;
-
-public class LoadStateEventArgs
+namespace TelegramBotBase.Args
 {
-    public LoadStateEventArgs()
+    public class LoadStateEventArgs
     {
-        Values = new Dictionary<string, object>();
-    }
+        public Dictionary<String,object> Values { get; set; }
 
-    public Dictionary<string, object> Values { get; set; }
-
-    public List<string> Keys => Values.Keys.ToList();
-
-    public string Get(string key)
-    {
-        return Values[key].ToString();
-    }
-
-    public int GetInt(string key)
-    {
-        var i = 0;
-        if (int.TryParse(Values[key].ToString(), out i))
+        public LoadStateEventArgs()
         {
-            return i;
+            Values = new Dictionary<string, object>();
         }
 
-        return 0;
-    }
-
-    public double GetDouble(string key)
-    {
-        double d = 0;
-        if (double.TryParse(Values[key].ToString(), out d))
+        public List<String> Keys
         {
-            return d;
+            get
+            {
+                return Values.Keys.ToList();
+            }
         }
 
-        return 0;
-    }
-
-    public bool GetBool(string key)
-    {
-        var b = false;
-        if (bool.TryParse(Values[key].ToString(), out b))
+        public String Get(String key)
         {
-            return b;
+            return Values[key].ToString();
         }
 
-        return false;
-    }
+        public int GetInt(String key)
+        {
+            int i = 0;
+            if (int.TryParse(Values[key].ToString(), out i))
+                return i;
 
-    public object GetObject(string key)
-    {
-        return Values[key];
+            return 0;
+        }
+
+        public double GetDouble(String key)
+        {
+            double d = 0;
+            if (double.TryParse(Values[key].ToString(), out d))
+                return d;
+
+            return 0;
+        }
+
+        public bool GetBool(String key)
+        {
+            bool b = false;
+            if (bool.TryParse(Values[key].ToString(), out b))
+                return b;
+
+            return false;
+        }
+
+        public object GetObject(String key)
+        {
+            return Values[key];
+        }
+
     }
 }

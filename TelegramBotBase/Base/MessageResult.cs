@@ -1,145 +1,200 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
-using Newtonsoft.Json;
+using Telegram.Bot;
 using Telegram.Bot.Types;
-using Telegram.Bot.Types.Enums;
+using TelegramBotBase.Sessions;
 
-namespace TelegramBotBase.Base;
-
-public class MessageResult : ResultBase
+namespace TelegramBotBase.Base
 {
-    internal MessageResult()
+    public class MessageResult : ResultBase
     {
-    }
 
-    public MessageResult(Update update)
-    {
-        UpdateData = update;
-    }
+        public Telegram.Bot.Types.Update UpdateData { get; set; }
 
-    public Update UpdateData { get; set; }
-
-    /// <summary>
-    ///     Returns the Device/ChatId
-    /// </summary>
-    public override long DeviceId =>
-        UpdateData?.Message?.Chat?.Id
-        ?? UpdateData?.EditedMessage?.Chat.Id
-        ?? UpdateData?.CallbackQuery.Message?.Chat.Id
-        ?? Device?.DeviceId
-        ?? 0;
-
-    /// <summary>
-    ///     The message id
-    /// </summary>
-    public override int MessageId =>
-        UpdateData?.Message?.MessageId
-        ?? Message?.MessageId
-        ?? UpdateData?.CallbackQuery?.Message?.MessageId
-        ?? 0;
-
-    public string Command => UpdateData?.Message?.Text ?? "";
-
-    public string MessageText => UpdateData?.Message?.Text ?? "";
-
-    public MessageType MessageType => Message?.Type ?? MessageType.Unknown;
-
-    public override Message Message =>
-        UpdateData?.Message
-        ?? UpdateData?.EditedMessage
-        ?? UpdateData?.ChannelPost
-        ?? UpdateData?.EditedChannelPost
-        ?? UpdateData?.CallbackQuery?.Message;
-
-    /// <summary>
-    ///     Is this an action ? (i.e. button click)
-    /// </summary>
-    public bool IsAction => UpdateData.CallbackQuery != null;
-
-    /// <summary>
-    ///     Is this a command ? Starts with a slash '/' and a command
-    /// </summary>
-    public bool IsBotCommand => MessageText.StartsWith("/");
-
-    /// <summary>
-    ///     Returns a List of all parameters which has been sent with the command itself (i.e. /start 123 456 789 =>
-    ///     123,456,789)
-    /// </summary>
-    public List<string> BotCommandParameters
-    {
-        get
+        /// <summary>
+        /// Returns the Device/ChatId
+        /// </summary>
+        public override long DeviceId
         {
-            if (!IsBotCommand)
+            get
             {
-                return new List<string>();
+                return this.UpdateData?.Message?.Chat?.Id
+                    ?? this.UpdateData?.EditedMessage?.Chat.Id
+                    ?? this.UpdateData?.CallbackQuery.Message?.Chat.Id
+                    ?? Device?.DeviceId
+                    ?? 0;
+            }
+        }
+
+        /// <summary>
+        /// The message id
+        /// </summary>
+        public new int MessageId
+        {
+            get
+            {
+                return this.UpdateData?.Message?.MessageId
+                    ?? this.Message?.MessageId
+                    ?? this.UpdateData?.CallbackQuery?.Message?.MessageId
+                    ?? 0;
+            }
+        }
+
+        public String Command
+        {
+            get
+            {
+                return this.UpdateData?.Message?.Text ?? "";
+            }
+        }
+
+        public String MessageText
+        {
+            get
+            {
+                return this.UpdateData?.Message?.Text ?? "";
+            }
+        }
+
+        public Telegram.Bot.Types.Enums.MessageType MessageType
+        {
+            get
+            {
+                return Message?.Type ?? Telegram.Bot.Types.Enums.MessageType.Unknown;
+            }
+        }
+
+        public Message Message
+        {
+            get
+            {
+                return this.UpdateData?.Message
+                    ?? this.UpdateData?.EditedMessage
+                    ?? this.UpdateData?.ChannelPost
+                    ?? this.UpdateData?.EditedChannelPost
+                    ?? this.UpdateData?.CallbackQuery?.Message;
+            }
+        }
+
+        /// <summary>
+        /// Is this an action ? (i.e. button click)
+        /// </summary>
+        public bool IsAction
+        {
+            get
+            {
+                return (this.UpdateData.CallbackQuery != null);
+            }
+        }
+
+        /// <summary>
+        /// Is this a command ? Starts with a slash '/' and a command
+        /// </summary>
+        public bool IsBotCommand
+        {
+            get
+            {
+                return (this.MessageText.StartsWith("/"));
+            }
+        }
+
+        /// <summary>
+        /// Returns a List of all parameters which has been sent with the command itself (i.e. /start 123 456 789 => 123,456,789)
+        /// </summary>
+        public List<String> BotCommandParameters
+        {
+            get
+            {
+                if (!IsBotCommand)
+                    return new List<string>();
+
+                //Split by empty space and skip first entry (command itself), return as list
+                return this.MessageText.Split(' ').Skip(1).ToList();
+            }
+        }
+
+        /// <summary>
+        /// Returns just the command (i.e. /start 1 2 3 => /start)
+        /// </summary>
+        public String BotCommand
+        {
+            get
+            {
+                if (!IsBotCommand)
+                    return null;
+
+                return this.MessageText.Split(' ')[0];
+            }
+        }
+
+        /// <summary>
+        /// Returns if this message will be used on the first form or not.
+        /// </summary>
+        public bool IsFirstHandler { get; set; } = true;
+
+        public bool Handled { get; set; } = false;
+
+        public String RawData
+        {
+            get
+            {
+                return this.UpdateData?.CallbackQuery?.Data;
+            }
+        }
+
+        public T GetData<T>()
+            where T : class
+        {
+            T cd = null;
+            try
+            {
+                cd = Newtonsoft.Json.JsonConvert.DeserializeObject<T>(this.RawData);
+
+                return cd;
+            }
+            catch
+            {
+
             }
 
-            //Split by empty space and skip first entry (command itself), return as list
-            return MessageText.Split(' ').Skip(1).ToList();
+            return null;
         }
-    }
 
-    /// <summary>
-    ///     Returns just the command (i.e. /start 1 2 3 => /start)
-    /// </summary>
-    public string BotCommand
-    {
-        get
+        /// <summary>
+        /// Confirm incoming action (i.e. Button click)
+        /// </summary>
+        /// <param name="message"></param>
+        /// <returns></returns>
+        public async Task ConfirmAction(String message = "", bool showAlert = false, String urlToOpen = null)
         {
-            if (!IsBotCommand)
+            await this.Device.ConfirmAction(this.UpdateData.CallbackQuery.Id, message, showAlert, urlToOpen);
+        }
+
+        public override async Task DeleteMessage()
+        {
+            try
             {
-                return null;
+                await base.DeleteMessage(this.MessageId);
             }
+            catch
+            {
 
-            return MessageText.Split(' ')[0];
+            }
         }
-    }
 
-    /// <summary>
-    ///     Returns if this message will be used on the first form or not.
-    /// </summary>
-    public bool IsFirstHandler { get; set; } = true;
-
-    public bool Handled { get; set; } = false;
-
-    public string RawData => UpdateData?.CallbackQuery?.Data;
-
-    public T GetData<T>()
-        where T : class
-    {
-        T cd = null;
-        try
+        internal MessageResult()
         {
-            cd = JsonConvert.DeserializeObject<T>(RawData);
 
-            return cd;
         }
-        catch
+
+        public MessageResult(Telegram.Bot.Types.Update update)
         {
+            this.UpdateData = update;
+
         }
 
-        return null;
-    }
-
-    /// <summary>
-    ///     Confirm incoming action (i.e. Button click)
-    /// </summary>
-    /// <param name="message"></param>
-    /// <returns></returns>
-    public async Task ConfirmAction(string message = "", bool showAlert = false, string urlToOpen = null)
-    {
-        await Device.ConfirmAction(UpdateData.CallbackQuery.Id, message, showAlert, urlToOpen);
-    }
-
-    public override async Task DeleteMessage()
-    {
-        try
-        {
-            await base.DeleteMessage(MessageId);
-        }
-        catch
-        {
-        }
     }
 }

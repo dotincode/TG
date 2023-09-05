@@ -1,14 +1,22 @@
-﻿namespace TelegramBotBase.Enums;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
 
-public enum EKeyboardType
+namespace TelegramBotBase.Enums
 {
-    /// <summary>
-    ///     Uses a ReplyKeyboardMarkup
-    /// </summary>
-    ReplyKeyboard = 0,
+    public enum eKeyboardType
+    {
+        /// <summary>
+        /// Uses a ReplyKeyboardMarkup
+        /// </summary>
+        ReplyKeyboard = 0,
 
-    /// <summary>
-    ///     Uses a InlineKeyboardMakup
-    /// </summary>
-    InlineKeyBoard = 1
+        /// <summary>
+        /// Uses a InlineKeyboardMakup
+        /// </summary>
+        InlineKeyBoard = 1
+
+    }
 }

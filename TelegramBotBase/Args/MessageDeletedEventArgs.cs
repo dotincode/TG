@@ -1,11 +1,23 @@
-﻿namespace TelegramBotBase.Args;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using Telegram.Bot.Types;
 
-public class MessageDeletedEventArgs
+namespace TelegramBotBase.Args
 {
-    public MessageDeletedEventArgs(int messageId)
+    public class MessageDeletedEventArgs
     {
-        MessageId = messageId;
-    }
+        public int MessageId
+        {
+            get;set;
+        }
 
-    public int MessageId { get; set; }
+        public MessageDeletedEventArgs(int messageId)
+        {
+            this.MessageId = messageId;
+        }
+
+    }
 }

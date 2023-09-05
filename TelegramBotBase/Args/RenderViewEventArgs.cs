@@ -1,13 +1,20 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Text;
 
-namespace TelegramBotBase.Args;
-
-public class RenderViewEventArgs : EventArgs
+namespace TelegramBotBase.Args
 {
-    public RenderViewEventArgs(int viewIndex)
+    public class RenderViewEventArgs : EventArgs
     {
-        CurrentView = viewIndex;
-    }
+        public int CurrentView { get; set; }
 
-    public int CurrentView { get; set; }
+
+        public RenderViewEventArgs(int ViewIndex)
+        {
+
+            CurrentView = ViewIndex;
+        }
+
+
+    }
 }

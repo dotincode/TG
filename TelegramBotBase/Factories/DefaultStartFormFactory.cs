@@ -1,26 +1,26 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Text;
 using TelegramBotBase.Form;
-using TelegramBotBase.Interfaces;
 
-namespace TelegramBotBase.Factories;
-
-public class DefaultStartFormFactory : IStartFormFactory
+namespace TelegramBotBase.Factories
 {
-    private readonly Type _startFormClass;
-
-    public DefaultStartFormFactory(Type startFormClass)
+    public class DefaultStartFormFactory : Interfaces.IStartFormFactory
     {
-        if (!typeof(FormBase).IsAssignableFrom(startFormClass))
+        private readonly Type _startFormClass;
+
+        public DefaultStartFormFactory(Type startFormClass)
         {
-            throw new ArgumentException("startFormClass argument must be a FormBase type");
+            if (!typeof(FormBase).IsAssignableFrom(startFormClass))
+                throw new ArgumentException("startFormClass argument must be a FormBase type");
+
+            _startFormClass = startFormClass;
         }
 
-        _startFormClass = startFormClass;
-    }
 
-
-    public FormBase CreateForm()
-    {
-        return _startFormClass.GetConstructor(new Type[] { })?.Invoke(new object[] { }) as FormBase;
+        public FormBase CreateForm()
+        {
+            return _startFormClass.GetConstructor(new Type[] { })?.Invoke(new object[] { }) as FormBase;
+        }
     }
 }
